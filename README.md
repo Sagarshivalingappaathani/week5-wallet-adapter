@@ -10,6 +10,7 @@ This is a Solana dApp that allows users to interact with the Solana blockchain. 
 - **Transaction**: Send tokens from your wallet to another wallet address.
 - **Sign Message**: Sign messages using your wallet for verification.
 - **View Tokens**: List and display all tokens associated with your wallet.
+- **Token Transaction**: Transfer SPL tokens between wallets, automatically creating token accounts if needed.
 
 ## Demo
 
