@@ -4,24 +4,34 @@ import {
   ConnectionProvider,
   WalletProvider,
 } from '@solana/wallet-adapter-react';
-import {
-  WalletModalProvider,
-  WalletDisconnectButton,
-  WalletMultiButton,
-} from '@solana/wallet-adapter-react-ui';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { useMemo } from 'react';
 import { clusterApiUrl } from '@solana/web3.js';
 import '@solana/wallet-adapter-react-ui/styles.css';
+
+//it s just to avoid hydration error
+import dynamic from 'next/dynamic';
+const WalletMultiButtonDynamic = dynamic(
+  () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
+  { ssr: false }
+);
+const WalletDisconnectButtonDynamic = dynamic(
+  () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletDisconnectButton),
+  { ssr: false }
+);
+
 import Airdrop from '@/components/Airdrop';
 import Balance from '@/components/Balance';
 import Transaction from '@/components/Transaction';
 import SignMessage from '@/components/SignMessage';
 import AllTokens from '@/components/AllTokens';
+import TokenTransaction from '@/components/TokenTransaction';
 
 function App() {
   const network = WalletAdapterNetwork.Devnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  //const endpoint="https://solana-devnet.g.alchemy.com/v2/D2scTsXfiMJgmjkqvigvkwNCwc565itt";
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
   return (
@@ -32,19 +42,16 @@ function App() {
             <div className="w-full max-w-4xl p-8 bg-white rounded-lg shadow-lg">
               <h1 className="mb-4 text-2xl font-bold text-center text-blue-500">Solana dApp</h1>
               
-              {/* Devnet Warning Message */}
               <p className="mb-4 text-red-500 text-center">
                 This dApp works only for Devnet. Please switch your wallet to Developer Mode before connecting.
               </p>
               
-              {/* Row 1: Connect, Balance, Disconnect */}
               <div className="flex justify-between mb-6 space-x-4">
-                <WalletMultiButton className="btn-primary" />
+                <WalletMultiButtonDynamic className="btn-primary" />
                 <Balance />
-                <WalletDisconnectButton className="btn-secondary" />
+                <WalletDisconnectButtonDynamic  className="btn-secondary" />
               </div>
               
-              {/* Row 2: Airdrop and Transaction - Equal Space */}
               <div className="flex justify-between mb-6">
                 <div className="flex-1 mx-2">
                   <Airdrop />
@@ -54,10 +61,12 @@ function App() {
                 </div>
               </div>
               
-              {/* Row 3: Sign Message, Your Tokens */}
               <div className="flex justify-between mb-6 space-x-4">
                 <SignMessage />
-                <AllTokens />
+                <AllTokens/>
+              </div>
+              <div className="flex justify-between mb-6 space-x-4">
+                <TokenTransaction/>
               </div>
             </div>
           </div>

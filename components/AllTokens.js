@@ -7,9 +7,9 @@ export default function AllTokens() {
   const { publicKey } = useWallet();
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
-  const connection = new Connection('https://api.devnet.solana.com');
+  const connection = new Connection('https://solana-devnet.g.alchemy.com/v2/D2scTsXfiMJgmjkqvigvkwNCwc565itt');
 
-  const fetchTokens = useCallback(async () => {
+  const fetchTokens =async () => {
     if (!publicKey) return;
 
     try {
@@ -32,17 +32,16 @@ export default function AllTokens() {
       );
 
       setTokens(tokensList);
-      console.log(tokensList);
     } catch (error) {
       console.error('Error fetching tokens:', error);
     } finally {
       setLoading(false);
     }
-  }, [publicKey, connection]); // Add dependencies to useCallback
+  } 
 
   useEffect(() => {
-    fetchTokens(); // Call the fetchTokens function
-  }, [fetchTokens]); // Add fetchTokens as a dependency to useEffect
+    fetchTokens(); 
+  }, [fetchTokens]); 
 
   if (loading) {
     return <p className="text-gray-600">Loading tokens...</p>;
