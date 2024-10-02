@@ -1,23 +1,21 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { toast } from 'react-toastify';
 
 export default function Airdrop() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
   const [amount, setAmount] = useState(1); // Default 1 SOL
-  const [airdropStatus, setAirdropStatus] = useState('');
 
-
-  // Handle airdrop request
   const requestAirdrop = async () => {
     if (!publicKey) {
-      setAirdropStatus('Wallet not connected');
+      toast.error('Wallet not connected');
       return;
     }
 
     try {
-      setAirdropStatus('Requesting airdrop...');
+      toast.info('Requesting airdrop...');
       const signature = await connection.requestAirdrop(publicKey, amount * LAMPORTS_PER_SOL);
 
       const latestBlockHash = await connection.getLatestBlockhash();
@@ -27,9 +25,9 @@ export default function Airdrop() {
         lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
       });
 
-      setAirdropStatus('Airdrop successful!');
+      toast.success('Airdrop successful!');
     } catch (error) {
-      setAirdropStatus(`Airdrop failed: ${error.message}`);
+      toast.error(`Airdrop failed: ${error.message}`);
     }
   };
 
@@ -58,8 +56,6 @@ export default function Airdrop() {
           >
             Request Airdrop
           </button>
-
-          <p className="mt-4 text-sm text-gray-600">{airdropStatus}</p>
         </div>
       ) : (
         <p className="text-gray-600">Connect your wallet to request an airdrop.</p>

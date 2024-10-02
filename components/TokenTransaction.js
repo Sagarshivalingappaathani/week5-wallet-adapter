@@ -9,6 +9,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 const isValidBase58Address = (address) => {
   try {
@@ -26,7 +27,6 @@ const TokenTransaction = () => {
   const [recipientAddress, setRecipientAddress] = useState('');
   const [tokenMintAddress, setTokenMintAddress] = useState('');
   const [amount, setAmount] = useState('10000000000');
-  const [status, setStatus] = useState('');
 
   const resetForm = () => {
     setRecipientAddress('');
@@ -36,18 +36,18 @@ const TokenTransaction = () => {
 
   const handleTransfer = async () => {
     if (!publicKey) {
-      setStatus('Please connect your wallet!');
+      toast.error('Please connect your wallet!');
       return;
     }
 
     // Validate recipient and token mint addresses
     if (!isValidBase58Address(recipientAddress)) {
-      setStatus('Invalid recipient address!');
+      toast.error('Invalid recipient address!');
       return;
     }
 
     if (!isValidBase58Address(tokenMintAddress)) {
-      setStatus('Invalid token mint address!');
+      toast.error('Invalid token mint address!');
       return;
     }
 
@@ -55,17 +55,16 @@ const TokenTransaction = () => {
       const recipientPublicKey = new PublicKey(recipientAddress);
       const mintPublicKey = new PublicKey(tokenMintAddress);
 
-      // Get the account info for the mint
+      //get the mint account details 
       const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
       if (mintAccountInfo === null) {
         throw new Error('Token mint account not found');
       }
 
-      // Check the owner (programId) of the mint account
       const tokenProgramId = mintAccountInfo.owner.toBase58();
-      const tokenProgramIdPublicKey = new PublicKey(tokenProgramId);
+      const tokenProgramIdPublicKey = new PublicKey(tokenProgramId); //programId
 
-      // Get the associated token account for the sender
+      //basically PDA concept here
       const senderTokenAccount = await getAssociatedTokenAddress(
         mintPublicKey,
         publicKey,
@@ -73,7 +72,6 @@ const TokenTransaction = () => {
         tokenProgramIdPublicKey
       );
 
-      // Check if the recipient's associated token account exists
       const recipientTokenAccount = await getAssociatedTokenAddress(
         mintPublicKey,
         recipientPublicKey,
@@ -83,44 +81,42 @@ const TokenTransaction = () => {
 
       const transaction = new Transaction();
 
-      // If the recipient's token account does not exist, create it
       try {
+        //try to get the  token account details of recrecipient
         await getAccount(connection, recipientTokenAccount, false, tokenProgramIdPublicKey);
       } catch (error) {
-        console.log("Recipient's token account does not exist");
         if (error instanceof TokenAccountNotFoundError) {
           transaction.add(
             createAssociatedTokenAccountInstruction(
-              publicKey, // Payer
-              recipientTokenAccount, // New token account for recipient
-              recipientPublicKey, // Recipient's public key
-              mintPublicKey, // Token mint address
-              tokenProgramIdPublicKey, // Mint account programId
+              publicKey,
+              recipientTokenAccount,
+              recipientPublicKey,
+              mintPublicKey,
+              tokenProgramIdPublicKey,
               ASSOCIATED_TOKEN_PROGRAM_ID
             )
           );
+          toast.info(`Recipient account is created`);
         } else {
-          throw error; // If the error is not due to the account not being found
+          throw error;
         }
       }
 
-      // Add the transfer instruction to the transaction
       transaction.add(
         createTransferInstruction(
-          senderTokenAccount, // Sender's token account
-          recipientTokenAccount, // Recipient's token account
-          publicKey, // Sender's public key
-          Number(amount), // Amount to transfer
+          senderTokenAccount,
+          recipientTokenAccount,
+          publicKey,
+          Number(amount),
           [publicKey],
           tokenProgramIdPublicKey
         )
       );
 
-      // Send transaction and confirm
       const signature = await sendTransaction(transaction, connection);
-      setStatus(`Transaction sent: ${signature}`);
+      toast.info(`Transaction sent: ${signature}`);
 
-      // Confirm the transaction
+      //confirmation strategy using latest blockhash
       const strategy = {
         signature,
         blockhash: transaction.recentBlockhash,
@@ -132,11 +128,11 @@ const TokenTransaction = () => {
         throw new Error('Transaction failed');
       }
 
-      setStatus('Transaction confirmed!');
+      toast.success('Transaction confirmed!');
       resetForm();
     } catch (error) {
       console.error('Transfer failed:', error);
-      setStatus(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
       resetForm();
     }
   };
@@ -175,8 +171,6 @@ const TokenTransaction = () => {
       >
         Send Tokens
       </button>
-
-      {status && <p className="mt-4 text-center text-gray-800">{status}</p>}
     </div>
   );
 };

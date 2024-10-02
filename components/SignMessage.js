@@ -1,6 +1,7 @@
-import { useState} from 'react';
+import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { encode } from 'bs58';
+import { toast } from 'react-toastify';
 
 export default function SignMessage() {
   const { publicKey, signMessage } = useWallet();
@@ -9,18 +10,19 @@ export default function SignMessage() {
 
   const handleSignMessage = async () => {
     if (!publicKey || !signMessage) {
-      alert('Wallet not connected or does not support message signing');
+      toast.error('Wallet not connected or does not support message signing');
       return;
     }
 
     try {
-      const encodedMessage = new TextEncoder().encode(message); 
-      const signature = await signMessage(encodedMessage); 
-      setSignedMessage(encode(signature)); 
-      alert('Message signed successfully!');
+      const encodedMessage = new TextEncoder().encode(message);
+      const signature = await signMessage(encodedMessage);
+      const encodedSignature = encode(signature);
+      setSignedMessage(encodedSignature);
+      toast.success(`Message signed successfully! Signature: ${encodedSignature}`);
     } catch (error) {
       console.error('Error signing message:', error);
-      alert(`Error signing message: ${error.message}`);
+      toast.error(`Error signing message: ${error.message}`);
     }
   }
 
@@ -44,15 +46,6 @@ export default function SignMessage() {
           >
             Sign Message
           </button>
-
-          {signedMessage && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-600">Signed Message:</p>
-              <p className="break-all p-2 bg-gray-100 border border-gray-300 rounded-md text-black">
-                {signedMessage}
-              </p>
-            </div>
-          )}
         </div>
       ) : (
         <p className="text-gray-600">Connect your wallet to sign a message.</p>

@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { toast } from 'react-toastify'; // Import toast for notifications
 
 export default function Transactions() {
   const { connection } = useConnection();
@@ -12,20 +13,20 @@ export default function Transactions() {
   // Handle the transaction request
   const sendSol = async () => {
     if (!publicKey) {
-      setTransactionStatus('Wallet not connected');
+      toast.error('Wallet not connected'); 
       return;
     }
 
     if (!recipient) {
-      setTransactionStatus('Recipient address is required');
+      toast.error('Recipient address is required'); 
       return;
     }
 
     try {
       setTransactionStatus('Sending transaction...');
+      toast.info('Sending transaction...'); 
 
-
-       // Step 1: Create a new transaction
+      // Step 1: Create a new transaction
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -36,9 +37,8 @@ export default function Transactions() {
 
       // Step 2: Get the latest blockhash
       const latestBlockHash = await connection.getLatestBlockhash();
-      //why to use latestBlockHash
-      //No one can copy your transaction and resend it later
-
+      // Why to use latestBlockHash
+      // No one can copy your transaction and resend it later
 
       // Step 3: Attach blockhash and fee payer
       transaction.recentBlockhash = latestBlockHash.blockhash;
@@ -55,8 +55,10 @@ export default function Transactions() {
       });
 
       setTransactionStatus('Transaction successful!');
+      toast.success('Transaction successful!'); // Notify user upon successful transaction
     } catch (error) {
       setTransactionStatus(`Transaction failed: ${error.message}`);
+      toast.error(`Transaction failed: ${error.message}`); // Notify user if the transaction fails
     }
   }
 
@@ -92,8 +94,6 @@ export default function Transactions() {
       >
         Send Transaction
       </button>
-
-      <p className="mt-4 text-sm text-gray-600">{transactionStatus}</p>
     </div>
   );
 }

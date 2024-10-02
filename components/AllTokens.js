@@ -81,7 +81,7 @@ export default function AllTokens() {
   }
 
   return (
-    <div className="mt-1">
+    <div className="mt-1 w-full">
       <h3 className="font-semibold mb-2 text-black">Your Tokens</h3>
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-indigo-700">
