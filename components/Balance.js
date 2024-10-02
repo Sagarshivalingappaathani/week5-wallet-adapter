@@ -6,13 +6,13 @@ const Balance = () => {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
   const [balance, setBalance] = useState(null);
-
+  
   useEffect(() => {
     const getBalance = async () => {
       if (publicKey) {
         try {
           const lamports = await connection.getBalance(publicKey);
-          setBalance(lamports / LAMPORTS_PER_SOL); // Convert lamports to SOL
+          setBalance(lamports / LAMPORTS_PER_SOL);
         } catch (error) {
           console.error("Failed to fetch balance:", error);
           setBalance(null);

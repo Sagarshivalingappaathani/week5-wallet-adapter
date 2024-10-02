@@ -2,11 +2,11 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Transaction, PublicKey } from '@solana/web3.js';
 import {
   createTransferInstruction,
-  getOrCreateAssociatedTokenAccount,
   getAssociatedTokenAddress,
   getAccount,
-  TokenAccountNotFoundError, 
-  createAssociatedTokenAccountInstruction
+  TokenAccountNotFoundError,
+  createAssociatedTokenAccountInstruction,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { useState } from 'react';
 
@@ -25,7 +25,7 @@ const TokenTransaction = () => {
 
   const [recipientAddress, setRecipientAddress] = useState('');
   const [tokenMintAddress, setTokenMintAddress] = useState('');
-  const [amount, setAmount] = useState('1000000000');
+  const [amount, setAmount] = useState('10000000000');
   const [status, setStatus] = useState('');
 
   const resetForm = () => {
@@ -39,82 +39,88 @@ const TokenTransaction = () => {
       setStatus('Please connect your wallet!');
       return;
     }
-  
+
     // Validate recipient and token mint addresses
     if (!isValidBase58Address(recipientAddress)) {
       setStatus('Invalid recipient address!');
       return;
     }
-  
+
     if (!isValidBase58Address(tokenMintAddress)) {
       setStatus('Invalid token mint address!');
       return;
     }
-  
+
     try {
       const recipientPublicKey = new PublicKey(recipientAddress);
       const mintPublicKey = new PublicKey(tokenMintAddress);
-  
+
+      // Get the account info for the mint
+      const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
+      if (mintAccountInfo === null) {
+        throw new Error('Token mint account not found');
+      }
+
+      // Check the owner (programId) of the mint account
+      const tokenProgramId = mintAccountInfo.owner.toBase58();
+      const tokenProgramIdPublicKey = new PublicKey(tokenProgramId);
+
       // Get the associated token account for the sender
-      const senderTokenAccount = await getAssociatedTokenAddress(mintPublicKey, publicKey);
-  
+      const senderTokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,
+        publicKey,
+        false,
+        tokenProgramIdPublicKey
+      );
+
       // Check if the recipient's associated token account exists
-      const recipientTokenAccount = await getAssociatedTokenAddress(mintPublicKey, recipientPublicKey);
-  
+      const recipientTokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,
+        recipientPublicKey,
+        false,
+        tokenProgramIdPublicKey
+      );
+
+      const transaction = new Transaction();
+
       // If the recipient's token account does not exist, create it
       try {
-        await getAccount(connection, recipientTokenAccount);
+        await getAccount(connection, recipientTokenAccount, false, tokenProgramIdPublicKey);
       } catch (error) {
-        console.log(error);
+        console.log("Recipient's token account does not exist");
         if (error instanceof TokenAccountNotFoundError) {
-          // Create associated token account
-          const transaction = new Transaction().add(
+          transaction.add(
             createAssociatedTokenAccountInstruction(
-              publicKey,           // Payer
+              publicKey, // Payer
               recipientTokenAccount, // New token account for recipient
-              recipientPublicKey,   // Recipient's public key
-              mintPublicKey         // Token mint address
+              recipientPublicKey, // Recipient's public key
+              mintPublicKey, // Token mint address
+              tokenProgramIdPublicKey, // Mint account programId
+              ASSOCIATED_TOKEN_PROGRAM_ID
             )
           );
-          
-          console.log("Creating token account stage");
-          // Send transaction to create the account
-          const signature = await sendTransaction(transaction, connection);
-          setStatus(`Creating token account... Transaction sent: ${signature}`);
-  
-          // Confirm the transaction using TransactionConfirmationStrategy
-          const strategy = {
-            signature,
-            blockhash: transaction.recentBlockhash,
-            lastValidBlockHeight: (await connection.getLatestBlockhash()).lastValidBlockHeight,
-          };
-
-          const confirmation = await connection.confirmTransaction(strategy, 'confirmed');
-          if (confirmation.value.err) {
-            throw new Error('Token account creation failed');
-          }
-          setStatus('Token account created successfully!');
         } else {
           throw error; // If the error is not due to the account not being found
         }
       }
-  
-      // Now that we are sure the recipient has an associated token account,
-      // Create the transfer instruction
-      const transaction = new Transaction().add(
+
+      // Add the transfer instruction to the transaction
+      transaction.add(
         createTransferInstruction(
-          senderTokenAccount,              // Sender's token account
-          recipientTokenAccount,           // Recipient's token account
-          publicKey,                       // Sender's public key
-          Number(amount)                   // Amount to transfer
+          senderTokenAccount, // Sender's token account
+          recipientTokenAccount, // Recipient's token account
+          publicKey, // Sender's public key
+          Number(amount), // Amount to transfer
+          [publicKey],
+          tokenProgramIdPublicKey
         )
       );
-  
+
       // Send transaction and confirm
       const signature = await sendTransaction(transaction, connection);
       setStatus(`Transaction sent: ${signature}`);
-  
-      // Confirm the transaction using TransactionConfirmationStrategy
+
+      // Confirm the transaction
       const strategy = {
         signature,
         blockhash: transaction.recentBlockhash,
@@ -125,12 +131,13 @@ const TokenTransaction = () => {
       if (confirmation.value.err) {
         throw new Error('Transaction failed');
       }
+
       setStatus('Transaction confirmed!');
-      resetForm(); // Reset form after successful transaction
+      resetForm();
     } catch (error) {
       console.error('Transfer failed:', error);
       setStatus(`Error: ${error.message}`);
-      resetForm(); // Reset form after failed transaction
+      resetForm();
     }
   };
 

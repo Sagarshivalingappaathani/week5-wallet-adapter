@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 
-// Define the token program IDs, including the standard and custom ones
 const TOKEN_PROGRAM_IDS = [
   'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', // Custom Token Program ID (22)
   'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'  // Default Token Program ID
@@ -37,6 +36,7 @@ export const getTokenAccounts = async (walletAddress) => {
           const mintAddress = accountInfo.account.data.parsed.info.mint;
           tokenAccountsResults.push({ programId, mintAddress, tokenAmount });
         });
+        
       } catch (error) {
         console.error(`Error with program ID ${programId}:`, error);
       }

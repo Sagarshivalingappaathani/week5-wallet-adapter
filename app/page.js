@@ -10,7 +10,6 @@ import { useMemo } from 'react';
 import { clusterApiUrl } from '@solana/web3.js';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
-//it s just to avoid hydration error
 import dynamic from 'next/dynamic';
 const WalletMultiButtonDynamic = dynamic(
   () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
@@ -33,8 +32,9 @@ function App() {
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   //const endpoint="https://solana-devnet.g.alchemy.com/v2/D2scTsXfiMJgmjkqvigvkwNCwc565itt";
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
+  
 
-  return (
+  return (  
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
