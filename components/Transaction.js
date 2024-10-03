@@ -55,6 +55,8 @@ export default function Transactions() {
       });
 
       setTransactionStatus('Transaction successful!');
+      setAmount('');
+      setRecipient('');
       toast.success('Transaction successful!'); // Notify user upon successful transaction
     } catch (error) {
       setTransactionStatus(`Transaction failed: ${error.message}`);
